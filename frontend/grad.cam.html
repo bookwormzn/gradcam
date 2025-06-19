@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Görsel Sınıflandırma ve Grad-CAM</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        body {
+            background-color: #e7f0fd;
+            padding: 40px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #1a1a1a;
+        }
+
+        .container {
+            max-width: 600px;
+            background: white;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(25, 118, 210, 0.2);
+        }
+
+        h2 {
+            color: #0d47a1;
+            font-weight: 700;
+        }
+
+        .btn-primary {
+            background-color: #1565c0;
+            border-color: #1565c0;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background-color: #0d47a1;
+            border-color: #0d47a1;
+        }
+
+        img {
+            max-width: 100%;
+            margin-top: 20px;
+            border-radius: 12px;
+            border: 2px solid #1565c0;
+            box-shadow: 0 0 10px rgba(21, 101, 192, 0.6);
+        }
+
+        #result {
+            border-top: 2px solid #1565c0;
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #0d47a1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2 class="mb-4 text-center">Görsel Sınıflandırma ve Grad-CAM</h2>
+        <form id="upload-form">
+            <div class="mb-3">
+                <label for="image" class="form-label">Bir resim seçin:</label>
+                <input class="form-control" type="file" id="image" accept="image/*" required />
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Tahmin Et</button>
+        </form>
+
+        <div id="result" style="display: none;">
+            <h4 class="mt-4">Tahmin Sonucu: <span id="prediction" class="text-primary fw-bold"></span></h4>
+            <h5 class="mt-3">Grad-CAM Görseli:</h5>
+            <img id="gradcam" src="" alt="Grad-CAM Görseli" />
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById("upload-form");
+        const imageInput = document.getElementById("image");
+        const resultSection = document.getElementById("result");
+        const predictionText = document.getElementById("prediction");
+        const gradcamImg = document.getElementById("gradcam");
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const file = imageInput.files[0];
+
+            // predict için formdata
+            const formData1 = new FormData();
+            formData1.append("file", file);
+            const predictRes = await fetch("http://localhost:8000/predict", {
+                method: "POST",
+                body: formData1,
+            });
+            const predictData = await predictRes.json();
+            predictionText.textContent = predictData.prediction;
+
+            // gradcam için ayrı formdata
+            const formData2 = new FormData();
+            formData2.append("file", file);
+            const gradcamRes = await fetch("http://localhost:8000/gradcam", {
+                method: "POST",
+                body: formData2,
+            });
+            const gradcamData = await gradcamRes.json();
+
+            // Cache sorununu önlemek için timestamp parametresi ekliyoruz
+            gradcamImg.src = "http://localhost:8000" + gradcamData.gradcam_url + "?t=" + new Date().getTime();
+
+            resultSection.style.display = "block";
+        });
+    </script>
+</body>
+
+</html>
